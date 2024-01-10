@@ -1,6 +1,6 @@
 // src/components/Chat.tsx
 import React, { useEffect, useState } from "react";
-import { TextField, Button, Container, Grid, LinearProgress } from "@mui/material";
+import { TextField, Button, Container, Grid, LinearProgress, Alert } from "@mui/material";
 import Message from "./Message";
 import OpenAI from "openai";
 import { MessageDto } from "../models/MessageDto";
@@ -12,12 +12,13 @@ const Chat: React.FC = () => {
   const [assistant, setAssistant] = useState<any>(null);
   const [thread, setThread] = useState<any>(null);
   const [openai, setOpenai] = useState<any>(null);
-  const [apiKey, setApiKey] = useState<any>(null);
-  const [assistantId, setAssistantId] = useState<any>(null);
+  const [apiKey, setApiKey] = useState<any>('');
+  const [assistantId, setAssistantId] = useState<any>('');
+  const [error, setError] = useState<any>(null);
 
-  useEffect(() => {
+  const handleInit = () => {
     initChatBot();
-  }, [assistantId, apiKey]);
+  };
 
   useEffect(() => {
     setMessages([
@@ -34,16 +35,22 @@ const Chat: React.FC = () => {
       dangerouslyAllowBrowser: true,
     });
 
-    const assistant = await openai.beta.assistants.retrieve(
-      assistantId
-    );
+    let assistant;
+    try {
+      setError(null);
+      assistant = await openai.beta.assistants.retrieve(
+        assistantId
+      );
+      // Create a thread
+      const thread = await openai.beta.threads.create();
 
-    // Create a thread
-    const thread = await openai.beta.threads.create();
-
-    setOpenai(openai);
-    setAssistant(assistant);
-    setThread(thread);
+      setOpenai(openai);
+      setAssistant(assistant);
+      setThread(thread);
+    } catch(e) {
+      console.error(e);
+      setError('Invalid credentials');
+    }    
   };
 
   const createNewMessage = (content: string, isUser: boolean) => {
@@ -104,47 +111,61 @@ const Chat: React.FC = () => {
 
   return (
     <Container>
-      <p>Example: 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</p>
-      <TextField
-        label="Type your api key"
-        variant="outlined"
-        fullWidth
-        value={apiKey}
-        onChange={(e) => setApiKey(e.target.value)}
-      />
-      <TextField
-        label="Type your assistantId"
-        variant="outlined"
-        fullWidth
-        value={assistantId}
-        onChange={(e) => setAssistantId(e.target.value)}
-      />
-      <Grid container direction="column" spacing={2} paddingBottom={5}>
-        {messages.map((message, index) => (
-          <Grid item alignSelf={message.isUser ? "flex-end" : "flex-start"} key={index}>
-            <Message key={index} message={message} />
+      {!assistant ? (
+        <Grid container spacing={2}>
+          <Grid item xs={8}>
+            <TextField
+              label="Type your api key"
+              variant="outlined"
+              fullWidth
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
           </Grid>
-        ))}
-        <Grid item>
-          <TextField
-            label="Type your message"
-            variant="outlined"
-            disabled={isWaiting}
-            fullWidth
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyPress}
-          />
-          {isWaiting && <LinearProgress color="inherit" />}
-        </Grid>
-        {!isWaiting && (
-          <Grid item>
-            <Button variant="contained" color="primary" onClick={handleSendMessage} disabled={isWaiting}>
-              Send
+          <Grid item xs={4}>
+            <TextField
+              label="Type your assistantId"
+              variant="outlined"
+              fullWidth
+              value={assistantId}
+              onChange={(e) => setAssistantId(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={8}>
+            <Button variant="contained" color="primary" onClick={handleInit}>
+              Init
             </Button>
+            {error && <Alert severity="error">{error}</Alert>}
           </Grid>
-        )}
-      </Grid>
+        </Grid>
+      ) : (
+        <Grid container direction="column" spacing={2} paddingBottom={5}>
+          {messages.map((message, index) => (
+            <Grid item alignSelf={message.isUser ? "flex-end" : "flex-start"} key={index}>
+              <Message key={index} message={message} />
+            </Grid>
+          ))}
+          <Grid item>
+            <TextField
+              label="Type your message"
+              variant="outlined"
+              disabled={isWaiting}
+              fullWidth
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+            />
+            {isWaiting && <LinearProgress color="inherit" />}
+          </Grid>
+          {!isWaiting && (
+            <Grid item>
+              <Button variant="contained" color="primary" onClick={handleSendMessage} disabled={isWaiting}>
+                Send
+              </Button>
+            </Grid>
+          )}
+        </Grid>
+      )}
     </Container>
   );
 };
