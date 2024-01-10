@@ -112,32 +112,30 @@ const Chat: React.FC = () => {
   return (
     <Container>
       {!assistant ? (
-        <Grid container spacing={2}>
-          <Grid item xs={8}>
+        <div>
             <TextField
               label="Type your api key"
               variant="outlined"
               fullWidth
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
+              sx={{ pb: 1 }}
             />
-          </Grid>
-          <Grid item xs={4}>
             <TextField
               label="Type your assistantId"
               variant="outlined"
               fullWidth
               value={assistantId}
               onChange={(e) => setAssistantId(e.target.value)}
+              sx={{ pb: 1 }}
             />
-          </Grid>
-          <Grid item xs={8}>
-            <Button variant="contained" color="primary" onClick={handleInit}>
+          <div>
+            <Button variant="contained" color="primary" onClick={handleInit} sx={{ pb: 1 }}>
               Init
             </Button>
             {error && <Alert severity="error">{error}</Alert>}
-          </Grid>
-        </Grid>
+          </div>
+        </div>
       ) : (
         <Grid container direction="column" spacing={2} paddingBottom={5}>
           {messages.map((message, index) => (
